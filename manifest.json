@@ -1,6 +1,6 @@
 {
   "name": "Joyreactor Rating Plugin",
-  "version": "0.2",
+  "version": "0.3",
   "description": "Gets posts and comments rating without having to vote first.",
   "icons": {
     "32": "images/logo_32.png",
@@ -16,7 +16,8 @@
         "contentscript.js"
       ],
       "matches": [
-        "http://joyreactor.cc/*"
+        "http://joyreactor.cc/*",
+        "http://*.reactor.cc/*"
       ]
     }
   ],
@@ -24,6 +25,7 @@
     "script.js"
   ],
   "permissions": [
-    "http://joyreactor.cc/*"
+    "http://joyreactor.cc/*",
+    "http://*.reactor.cc/*"
   ]
 }
