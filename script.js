@@ -15,79 +15,92 @@ class Post {
     }
 }
 
-let posts = [].map.call(document.getElementsByClassName("postContainer"), e => e.id.replace('postContainer', ''))
-
 function takeData(post) {
-    let currentFoot = document.getElementById("postContainer" + post.id).getElementsByClassName("ufoot")[0];
-    let current = currentFoot.firstElementChild.getElementsByClassName("post_rating")[0].firstElementChild;
+    if (post instanceof Post) {
+        let currentFoot = document.getElementById("postContainer" + post.id).getElementsByClassName("ufoot")[0];
+        let current = currentFoot.firstElementChild.getElementsByClassName("post_rating")[0].firstElementChild;
 
-    if (current != null) {
-        current.innerHTML = current.innerHTML.replace("--", post.rating);
+        if (current != null) {
+            current.innerHTML = current.innerHTML.replace("--", post.rating);
 
-        let toggler = currentFoot.getElementsByClassName("post_comment_list")[0];
-        let config = { attributes: false, childList: true, subtree: true };
-        let callback = function (mutationsList, observer) {
-            if (mutationsList.filter(m => m.type === "childList").length > 0) {
-                observer.disconnect();
+            let toggler = currentFoot.getElementsByClassName("post_comment_list")[0];
+            let config = {attributes: false, childList: true, subtree: true};
+            let callback = function (mutationsList, observer) {
+                if (mutationsList.filter(m => m.type === "childList").length > 0) {
+                    observer.disconnect();
 
-                post.comments.forEach(function (comment) {
-                    let currentTxt = document.getElementById("comment_txt_" + post.id + "_" + comment.id);
-                    if (currentTxt != null) {
-                        let current = currentTxt.getElementsByClassName("comment_rating")[0].firstElementChild;
-                        if (current != null && !current.innerHTML.includes(";") && current.innerHTML.includes("vote")) {
-                            current.innerHTML = comment.rating + "; " + current.innerHTML
+                    post.comments.forEach(function (comment) {
+                        if (comment instanceof Comment) {
+                            let currentTxt = document.getElementById("comment_txt_" + post.id + "_" + comment.id);
+                            if (currentTxt != null) {
+                                let current = currentTxt.getElementsByClassName("comment_rating")[0].firstElementChild;
+                                if (current != null && !current.innerHTML.includes(";") && current.innerHTML.includes("vote")) {
+                                    current.innerHTML = comment.rating + "; " + current.innerHTML
+                                }
+                            }
                         }
-                    }
-                });
+                    });
 
-                observer.observe(toggler, config);
-            }
-        };
+                    observer.observe(toggler, config);
+                }
+            };
 
-        let observer = new MutationObserver(callback);
+            let observer = new MutationObserver(callback);
 
-        observer.observe(toggler, config);
+            observer.observe(toggler, config);
+        }
     }
 }
 
 function fetchPost(postId) {
-    fetch("http://joyreactor.cc/post/" + postId, {
+    console.log("postId: " + postId);
+    let request = new Request(window.location.protocol + "//" + window.location.host + "/post/" + postId, {
         method: 'GET',
         mode: "no-cors",
-        credentials: 'omit'
-    }).then((response) => {
+        credentials: 'omit',
+        redirect: "follow"
+    });
+
+    (fetch(request).then((response) => {
+        console.log(response);
         if (response.ok) {
             response.text().then((text) => {
-                console.log(postId + " - " + text.length)
+                console.log(postId + " - " + text.length);
                 if (text != null) {
-                    let doc = new DOMParser().parseFromString(text, "text/html");
-                    let ufoor_first = doc.getElementsByClassName("ufoot_first")
+                    let postDoc = new DOMParser().parseFromString(text, "text/html");
+                    let ufootFirst = postDoc.getElementsByClassName("ufoot_first");
 
-                    if (ufoor_first != null && ufoor_first.length > 0) {
-                        let postRating = ufoor_first[0].getElementsByClassName("post_rating")
+                    if (ufootFirst != null && ufootFirst.length > 0) {
+                        let postRating = ufootFirst[0].getElementsByClassName("post_rating");
 
                         if (postRating != null && postRating.length > 0) {
-                            let postRatingNumber = postRating[0].firstElementChild.firstChild.textContent
+                            let postRatingNumber = postRating[0].firstElementChild.firstChild.textContent;
 
-                            let commentIdElements = [].map.call(doc.querySelectorAll('[comment_id]'), e => {
+                            let commentIdElements = [].map.call(postDoc.querySelectorAll('[comment_id]'), e => {
                                 let commentId = e.attributes['comment_id'].value;
                                 let commentRating = e.firstElementChild.innerHTML;
                                 return new Comment(commentId, commentRating)
                             });
 
-                            let postObj = new Post(postId, postRatingNumber, commentIdElements)
+                            let postObj = new Post(postId, postRatingNumber, commentIdElements);
 
                             takeData(postObj)
                         }
                     }
                 }
             })
-        } else if (response.status == 503) {
-            fetchPost(postId)
+        } else if (response.status === 503) {
+            console.warn("Retrying for: " + postId + "...");
+            fetchPost(postId);
+        } else if (response.type === "opaque") {
+            //TODO: Find a workaround. [https://github.com/sssemil/joyreactor_rating_plugin/issues/1]
+            console.warn("Opaque response for: " + postId + ".");
         }
-    });
+    }));
 }
 
-posts.forEach(function (postId) {
-    fetchPost(postId)
-})
+window.onload = function () {
+    [].map.call(document.getElementsByClassName("postContainer"), e => {
+        fetchPost(e.id.replace('postContainer', ''));
+    });
+};
