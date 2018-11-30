@@ -95,6 +95,46 @@ function fetchPost(postId) {
         } else if (response.type === "opaque") {
             //TODO: Find a workaround. [https://github.com/sssemil/joyreactor_rating_plugin/issues/1]
             console.warn("Opaque response for: " + postId + ".");
+
+            // try to get at least comments ratings
+            fetchPostComments(postId)
+        }
+    });
+}
+
+function fetchPostComments(postId) {
+    console.log("postId: " + postId);
+    let request = new Request(window.location.protocol + "//" + window.location.host + "/post/comments/" + postId, {
+        method: 'GET',
+        mode: "no-cors",
+        credentials: 'omit',
+        redirect: "follow"
+    });
+
+    fetch(request).then((response) => {
+        console.log(response);
+        if (response.ok) {
+            response.text().then((text) => {
+                console.log(postId + " - " + text.length);
+                if (text != null) {
+                    let postCommentsDoc = new DOMParser().parseFromString(text, "text/html");
+
+                    if (postCommentsDoc != null) {
+                        let commentIdElements = [].map.call(postCommentsDoc.querySelectorAll('[comment_id]'), e => {
+                            let commentId = e.attributes['comment_id'].value;
+                            let commentRating = e.firstElementChild.innerHTML;
+                            return new Comment(commentId, commentRating)
+                        });
+
+                        let postObj = new Post(postId, "--", commentIdElements);
+
+                        takeData(postObj)
+                    }
+                }
+            })
+        } else if (response.status === 503) {
+            console.warn("Retrying for: " + postId + "...");
+            fetchPost(postId);
         }
     });
 }
