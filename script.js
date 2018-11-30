@@ -61,7 +61,7 @@ function fetchPost(postId) {
         redirect: "follow"
     });
 
-    (fetch(request).then((response) => {
+    fetch(request).then((response) => {
         console.log(response);
         if (response.ok) {
             response.text().then((text) => {
@@ -96,7 +96,7 @@ function fetchPost(postId) {
             //TODO: Find a workaround. [https://github.com/sssemil/joyreactor_rating_plugin/issues/1]
             console.warn("Opaque response for: " + postId + ".");
         }
-    }));
+    });
 }
 
 window.onload = function () {
