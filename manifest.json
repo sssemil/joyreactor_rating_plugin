@@ -17,6 +17,8 @@
       ],
       "matches": [
         "http://joyreactor.cc/*",
+        "http://reactor.cc/*",
+        "http://pornreactor.cc/*",
         "http://*.reactor.cc/*"
       ]
     }
@@ -26,6 +28,8 @@
   ],
   "permissions": [
     "http://joyreactor.cc/*",
+    "http://reactor.cc/*",
+    "http://pornreactor.cc/*",
     "http://*.reactor.cc/*"
   ]
 }
